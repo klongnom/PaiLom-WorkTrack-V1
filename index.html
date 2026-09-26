@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ระบบติดตามงานและดูแลพื้นที่ - ศูนย์สุขภาพมหาวิทยาลัยเชียงใหม่ “ไผ่ล้อม”</title>
+  <!-- Google Fonts: Sarabun & Kanit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ================= 1. LOGIN SCREEN (SHOWN WHEN NOT AUTHENTICATED) ================= -->
+  <div id="loginScreen" class="login-wrapper">
+    <div class="login-container">
+      <div class="login-card">
+        <div class="login-header">
+          <div class="login-crest">CMU</div>
+          <h1 class="login-title">ศูนย์สุขภาพมหาวิทยาลัยเชียงใหม่ “ไผ่ล้อม”</h1>
+          <p class="login-subtitle">ระบบติดตามงานและดูแลพื้นที่</p>
+        </div>
+
+        <form id="loginForm" class="login-form" onsubmit="app.handleLogin(event)">
+          <!-- Error Alert Banner -->
+          <div id="loginErrorAlert" class="login-alert hidden" role="alert">
+            <span id="loginErrorMessage">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</span>
+          </div>
+
+          <div class="form-item">
+            <label class="form-label" for="loginUsername">ชื่อผู้ใช้</label>
+            <input type="text" id="loginUsername" class="form-input" placeholder="ระบุชื่อผู้ใช้" autocomplete="username" required>
+          </div>
+
+          <div class="form-item">
+            <label class="form-label" for="loginPassword">รหัสผ่าน</label>
+            <div class="password-input-group">
+              <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" autocomplete="current-password" required>
+              <button type="button" class="btn-toggle-pw" onclick="app.togglePasswordVisibility('loginPassword', this)" aria-label="แสดงหรือซ่อนรหัสผ่าน">
+                <svg class="eye-icon eye-show" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="eye-icon eye-hide hidden" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginSubmitBtn">
+            เข้าสู่ระบบ
+          </button>
+
+          <div class="login-footer-info">
+            <p>ระบบภายในสำหรับบุคลากรศูนย์สุขภาพไผ่ล้อม</p>
+            <p class="text-subtle">ไม่มีระบบสมัครสมาชิก กรุณาติดต่อผู้ดูแลระบบเพื่อขอรับสิทธิ์เข้าใช้งาน</p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 2. MAIN APP SCREEN (PROTECTED ROUTE) ================= -->
+  <div id="mainAppScreen" class="app-container hidden">
+    <!-- Top Header (Institutional & Clean) -->
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="brand-block">
+          <div class="brand-crest">CMU</div>
+          <div class="brand-titles">
+            <h1 class="brand-title">ศูนย์สุขภาพมหาวิทยาลัยเชียงใหม่ “ไผ่ล้อม”</h1>
+            <p class="brand-subtitle">ระบบติดตามงานและดูแลพื้นที่</p>
+          </div>
+        </div>
+        <div class="header-meta">
+          <div class="current-date-badge" id="currentDateDisplay"></div>
+          
+          <!-- User Session Profile & Logout -->
+          <div class="user-meta-group">
+            <div class="user-badge-wrap">
+              <span class="user-name" id="headerUserName">-</span>
+              <span class="user-role-badge" id="headerUserRole">-</span>
+            </div>
+            <button class="btn-logout-header" onclick="app.confirmLogout()" title="ออกจากระบบ">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              <span class="logout-label">ออกจากระบบ</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs (Desktop Top Bar / Mobile Bottom Bar) -->
+    <nav class="nav-tabs" id="mainNav" aria-label="เมนูหลัก">
+      <div class="nav-tabs-inner">
+        <button class="nav-tab active" data-tab="dashboard">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="9" rx="1"/>
+            <rect x="14" y="3" width="7" height="5" rx="1"/>
+            <rect x="14" y="12" width="7" height="9" rx="1"/>
+            <rect x="3" y="16" width="7" height="5" rx="1"/>
+          </svg>
+          <span class="nav-label">แดชบอร์ด</span>
+        </button>
+
+        <button class="nav-tab" data-tab="tasks">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+          </svg>
+          <span class="nav-label">รายการงาน</span>
+          <span class="nav-badge" id="pendingBadge">0</span>
+        </button>
+
+        <button class="nav-tab" data-tab="calendar">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span class="nav-label">ปฏิทิน</span>
+        </button>
+
+        <button class="nav-tab" data-tab="history">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <span class="nav-label">ประวัติและสรุป</span>
+        </button>
+
+        <button class="nav-tab" data-tab="manage">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+          <span class="nav-label">จัดการงาน</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- ================= 1. TAB: DASHBOARD ================= -->
+      <section id="tab-dashboard" class="tab-pane active">
+        <!-- Banner Alert if Overdue Tasks Exist -->
+        <div id="overdueAlertBanner" class="alert-banner overdue hidden">
+          <div class="alert-content">
+            <span class="alert-title">มีงานค้างที่เลยกำหนดเวลา</span>
+            <span class="alert-sub" id="overdueBannerCount">จำนวน 0 รายการ</span>
+          </div>
+          <button class="btn btn-sm btn-danger" onclick="app.filterTasksByStatus('overdue')">ตรวจสอบงานค้าง</button>
+        </div>
+
+        <!-- Section: สรุปงานประจำวัน -->
+        <div class="content-block">
+          <div class="block-header">
+            <div>
+              <h2 class="block-title">ภาพรวมงานประจำวัน</h2>
+              <p class="block-subtitle" id="dashTodayDate">-</p>
+            </div>
+          </div>
+
+          <!-- Professional 6-Card Stat Grid -->
+          <div class="stat-grid">
+            <div class="stat-card" onclick="app.quickFilterTasks('all')">
+              <span class="stat-label">งานวันนี้</span>
+              <span class="stat-value" id="todayTotal">0</span>
+              <span class="stat-note">รายการทั้งหมด</span>
+            </div>
+
+            <div class="stat-card success" onclick="app.quickFilterTasks('completed')">
+              <span class="stat-label">เสร็จแล้ว</span>
+              <span class="stat-value text-success" id="todayDone">0</span>
+              <span class="stat-note" id="todayDonePct">0% สำเร็จ</span>
+            </div>
+
+            <div class="stat-card in-progress" onclick="app.quickFilterTasks('in_progress')">
+              <span class="stat-label">กำลังทำ</span>
+              <span class="stat-value text-info" id="todayDoing">0</span>
+              <span class="stat-note">อยู่ระหว่างดำเนินการ</span>
+            </div>
+
+            <div class="stat-card pending" onclick="app.quickFilterTasks('pending')">
+              <span class="stat-label">ยังไม่ทำ</span>
+              <span class="stat-value text-muted" id="todayPending">0</span>
+              <span class="stat-note">รอดำเนินการ</span>
+            </div>
+
+            <div class="stat-card warning" onclick="app.quickFilterTasks('problem')">
+              <span class="stat-label">มีปัญหา</span>
+              <span class="stat-value text-warning" id="todayProblem">0</span>
+              <span class="stat-note">รอการแก้ไข</span>
+            </div>
+
+            <div class="stat-card danger" onclick="app.quickFilterTasks('overdue')">
+              <span class="stat-label">ค้าง</span>
+              <span class="stat-value text-danger" id="todayOverdue">0</span>
+              <span class="stat-note">เกินกำหนด</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: สรุปรายสัปดาห์และรายเดือน -->
+        <div class="dashboard-split-row">
+          <!-- สัปดาห์นี้ -->
+          <div class="summary-card">
+            <div class="card-head">
+              <h3 class="card-head-title">สรุปสัปดาห์นี้</h3>
+              <span class="badge-text" id="weekRangeDisplay">7 วันล่าสุด</span>
+            </div>
+            <div class="progress-block">
+              <div class="progress-track">
+                <div class="progress-bar" id="weekProgressFill" style="width: 0%;"></div>
+              </div>
+              <div class="progress-meta">
+                <span>อัตราความสำเร็จ: <strong id="weekPct">0%</strong></span>
+                <span id="weekFraction" class="text-muted">0/0 งาน</span>
+              </div>
+            </div>
+            <div class="metrics-horizontal">
+              <div class="m-item">
+                <span class="m-val text-success" id="weekDone">0</span>
+                <span class="m-lbl">เสร็จสิ้น</span>
+              </div>
+              <div class="m-item">
+                <span class="m-val text-danger" id="weekOverdue">0</span>
+                <span class="m-lbl">ค้างทำ</span>
+              </div>
+              <div class="m-item">
+                <span class="m-val" id="weekTotal">0</span>
+                <span class="m-lbl">งานทั้งหมด</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- เดือนนี้ -->
+          <div class="summary-card">
+            <div class="card-head">
+              <h3 class="card-head-title">สรุปเดือนนี้</h3>
+              <span class="badge-text" id="monthNameDisplay">เดือนปัจจุบัน</span>
+            </div>
+            <div class="progress-block">
+              <div class="progress-track">
+                <div class="progress-bar progress-bar-blue" id="monthProgressFill" style="width: 0%;"></div>
+              </div>
+              <div class="progress-meta">
+                <span>อัตราความสำเร็จ: <strong id="monthPct">0%</strong></span>
+                <span id="monthFraction" class="text-muted">0/0 งาน</span>
+              </div>
+            </div>
+            <div class="metrics-horizontal four-col">
+              <div class="m-item">
+                <span class="m-val text-success" id="monthDone">0</span>
+                <span class="m-lbl">เสร็จแล้ว</span>
+              </div>
+              <div class="m-item">
+                <span class="m-val text-danger" id="monthOverdue">0</span>
+                <span class="m-lbl">ค้าง</span>
+              </div>
+              <div class="m-item">
+                <span class="m-val text-warning" id="monthProblem">0</span>
+                <span class="m-lbl">มีปัญหา</span>
+              </div>
+              <div class="m-item">
+                <span class="m-val" id="monthTotal">0</span>
+                <span class="m-lbl">ทั้งหมด</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Urgent Section -->
+        <div class="content-block mt-4">
+          <div class="block-header">
+            <div>
+              <h3 class="block-title">งานที่ต้องดำเนินการเร่งด่วน / งานครบกำหนดวันนี้</h3>
+              <p class="block-subtitle">แสดงรายการงานค้างและงานที่ต้องตรวจรับมอบ</p>
+            </div>
+            <button class="btn btn-text" onclick="app.switchTab('tasks')">ดูงานทั้งหมด</button>
+          </div>
+          <div id="urgentTaskList" class="task-card-list"></div>
+        </div>
+      </section>
+
+      <!-- ================= 2. TAB: TASKS ================= -->
+      <section id="tab-tasks" class="tab-pane">
+        <!-- Filters Panel (Institutional Clean Layout) -->
+        <div class="filter-card">
+          <div class="search-input-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="taskSearchInput" placeholder="ค้นหาชื่องาน พื้นที่ หรือรายละเอียด..." oninput="app.renderTasks()">
+          </div>
+
+          <!-- Filter 1: ประเภทงาน -->
+          <div class="filter-row">
+            <span class="filter-group-title">ประเภทงาน:</span>
+            <div class="filter-pills" id="freqChips">
+              <button class="pill active" data-freq="all" onclick="app.setFreqFilter('all', this)">ทั้งหมด</button>
+              <button class="pill" data-freq="daily" onclick="app.setFreqFilter('daily', this)">งานประจำวัน</button>
+              <button class="pill" data-freq="weekly" onclick="app.setFreqFilter('weekly', this)">งานประจำสัปดาห์</button>
+              <button class="pill" data-freq="biweekly" onclick="app.setFreqFilter('biweekly', this)">ทุก 2 สัปดาห์</button>
+              <button class="pill" data-freq="monthly" onclick="app.setFreqFilter('monthly', this)">งานประจำเดือน</button>
+            </div>
+          </div>
+
+          <!-- Filter 2: สถานะงาน -->
+          <div class="filter-row">
+            <span class="filter-group-title">สถานะ:</span>
+            <div class="filter-pills" id="statusChips">
+              <button class="pill active" data-status="all" onclick="app.setStatusFilter('all', this)">ทั้งหมด</button>
+              <button class="pill" data-status="pending" onclick="app.setStatusFilter('pending', this)">ยังไม่ทำ</button>
+              <button class="pill" data-status="in_progress" onclick="app.setStatusFilter('in_progress', this)">กำลังทำ</button>
+              <button class="pill" data-status="completed" onclick="app.setStatusFilter('completed', this)">เสร็จแล้ว</button>
+              <button class="pill pill-warning" data-status="problem" onclick="app.setStatusFilter('problem', this)">มีปัญหา</button>
+              <button class="pill pill-danger" data-status="overdue" onclick="app.setStatusFilter('overdue', this)">ค้าง</button>
+            </div>
+          </div>
+
+          <!-- Filter 3: พื้นที่ -->
+          <div class="filter-select-container">
+            <div class="select-field">
+              <label for="areaFilterSelect">พื้นที่ปฏิบัติงาน:</label>
+              <select id="areaFilterSelect" onchange="app.renderTasks()">
+                <option value="all">ทั้งหมด (ทุกพื้นที่)</option>
+              </select>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="app.resetFilters()">ล้างตัวกรอง</button>
+          </div>
+        </div>
+
+        <!-- Task List Summary Info -->
+        <div class="task-info-bar">
+          <span>พบ <strong><span id="filteredCount">0</span></strong> รายการ</span>
+          <span class="text-muted">ลำดับการแสดงผล: งานค้างและงานครบกำหนดขึ้นก่อน</span>
+        </div>
+
+        <!-- Main Task List Container -->
+        <div id="mainTaskList" class="task-card-list"></div>
+      </section>
+
+      <!-- ================= 3. TAB: CALENDAR ================= -->
+      <section id="tab-calendar" class="tab-pane">
+        <div class="content-block">
+          <div class="calendar-top-bar">
+            <div class="cal-nav-group">
+              <button class="btn-cal-step" onclick="app.prevMonth()" aria-label="เดือนก่อนหน้า">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <h2 class="cal-header-title" id="calendarTitle">กันยายน 2569</h2>
+              <button class="btn-cal-step" onclick="app.nextMonth()" aria-label="เดือนถัดไป">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+
+            <div class="cal-actions">
+              <button class="btn btn-sm btn-secondary" onclick="app.goToToday()">กลับไปวันนี้</button>
+              <div class="cal-legend-group">
+                <span class="legend-indicator dot-overdue"></span> ค้าง
+                <span class="legend-indicator dot-pending"></span> กำหนดทำ
+                <span class="legend-indicator dot-done"></span> เสร็จแล้ว
+              </div>
+            </div>
+          </div>
+
+          <!-- Calendar Days Grid -->
+          <div class="calendar-table">
+            <div class="cal-weekdays">
+              <div>อา.</div>
+              <div>จ.</div>
+              <div>อ.</div>
+              <div>พ.</div>
+              <div>พฤ.</div>
+              <div>ศ.</div>
+              <div>ส.</div>
+            </div>
+            <div id="calendarDays" class="cal-days-matrix"></div>
+          </div>
+        </div>
+
+        <!-- Selected Date Tasks Viewer -->
+        <div class="content-block mt-4">
+          <div class="block-header">
+            <div>
+              <h3 class="block-title">รายการงานประจำวันที่ <span id="calSelectedDateText">-</span></h3>
+              <p class="block-subtitle" id="calDateTaskCount">0 รายการ</p>
+            </div>
+          </div>
+          <div id="calTaskList" class="task-card-list"></div>
+        </div>
+      </section>
+
+      <!-- ================= 4. TAB: HISTORY & REPORT ================= -->
+      <section id="tab-history" class="tab-pane">
+        <div class="sub-navigation">
+          <button class="sub-nav-btn active" data-subtab="monthlyReport" onclick="app.switchSubTab('monthlyReport', this)">รายงานประจำเดือน</button>
+          <button class="sub-nav-btn" data-subtab="historyLog" onclick="app.switchSubTab('historyLog', this)">ประวัติการปฏิบัติงานย้อนหลัง</button>
+        </div>
+
+        <!-- Subtab 1: Monthly Institutional Report -->
+        <div id="subtab-monthlyReport" class="subtab-pane active">
+          <div class="report-toolbar">
+            <div class="form-inline">
+              <label for="reportMonthSelect">เลือกเดือนสรุปรายงาน:</label>
+              <input type="month" id="reportMonthSelect" onchange="app.renderMonthlyReport()">
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="window.print()">พิมพ์รายงาน</button>
+          </div>
+
+          <div class="report-document" id="monthlyReportContent"></div>
+        </div>
+
+        <!-- Subtab 2: Searchable History Log -->
+        <div id="subtab-historyLog" class="subtab-pane">
+          <div class="history-toolbar">
+            <input type="text" id="historySearch" placeholder="ค้นหาตามชื่องาน, พื้นที่, หรือชื่อผู้ปฏิบัติงาน..." oninput="app.renderHistory()">
+            <button class="btn btn-secondary btn-sm" onclick="app.exportHistoryCSV()">ส่งออกไฟล์ CSV</button>
+          </div>
+
+          <div class="table-container">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>วันที่</th>
+                  <th>เวลา</th>
+                  <th>งาน</th>
+                  <th>พื้นที่</th>
+                  <th>ผู้ปฏิบัติงาน</th>
+                  <th>สถานะ</th>
+                  <th>หมายเหตุ</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 5. TAB: MANAGEMENT ================= -->
+      <section id="tab-manage" class="tab-pane">
+        <div class="sub-navigation">
+          <button class="sub-nav-btn active" data-subtab="manageBins" onclick="app.switchSubTab('manageBins', this)">ฐานข้อมูลถังขยะ</button>
+          <button class="sub-nav-btn" data-subtab="manageTasks" onclick="app.switchSubTab('manageTasks', this)">จัดการงาน</button>
+          <button class="sub-nav-btn" data-subtab="manageAreas" onclick="app.switchSubTab('manageAreas', this)">จัดการพื้นที่</button>
+          <!-- Admin Only Subtabs -->
+          <button class="sub-nav-btn admin-only" data-subtab="manageUsers" onclick="app.switchSubTab('manageUsers', this)">จัดการผู้ใช้</button>
+          <button class="sub-nav-btn admin-only" data-subtab="systemConfig" onclick="app.switchSubTab('systemConfig', this)">สำรองและกู้คืน</button>
+        </div>
+
+        <!-- Manage Bins Subtab -->
+        <div id="subtab-manageBins" class="subtab-pane active">
+          <div class="block-header">
+            <div>
+              <h3 class="block-title">ฐานข้อมูลถังขยะแยกตามพื้นที่และประเภทสี</h3>
+              <p class="block-subtitle">จำนวนถังขยะประจำจุดบริการ ศูนย์สุขภาพมหาวิทยาลัยเชียงใหม่ “ไผ่ล้อม”</p>
+            </div>
+            <button class="btn btn-primary admin-only" onclick="app.openEditBinModal(null)">เพิ่มหรือปรับปรุงจุดถังขยะ</button>
+          </div>
+
+          <div class="bin-summary-grid" id="binStatsSummary"></div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>พื้นที่</th>
+                  <th class="text-center">ถังดำ (ทั่วไป)</th>
+                  <th class="text-center">ถังแดง (ติดเชื้อ)</th>
+                  <th class="text-center">ถังเขียว (เปียก)</th>
+                  <th class="text-center">ถังเหลือง (รีไซเคิล)</th>
+                  <th class="text-center">รวม (ใบ)</th>
+                  <th class="text-right">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="binTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Manage Tasks Subtab -->
+        <div id="subtab-manageTasks" class="subtab-pane">
+          <div class="block-header">
+            <div>
+              <h3 class="block-title">รายการงานและรอบความถี่มาตรฐาน</h3>
+              <p class="block-subtitle">กำหนดแบบแผนงาน ความถี่ วันที่เริ่มต้น และพื้นที่รับผิดชอบ</p>
+            </div>
+            <button class="btn btn-primary admin-only" onclick="app.openTaskModal(null)">เพิ่มงานใหม่</button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ชื่องาน</th>
+                  <th>พื้นที่</th>
+                  <th>ความถี่</th>
+                  <th>ทำล่าสุด</th>
+                  <th>ครบกำหนดถัดไป</th>
+                  <th class="text-right">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="manageTaskTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Manage Areas Subtab -->
+        <div id="subtab-manageAreas" class="subtab-pane">
+          <div class="block-header">
+            <div>
+              <h3 class="block-title">รายชื่อพื้นที่และจุดบริการ</h3>
+              <p class="block-subtitle">โครงสร้างห้องตรวจ ห้องบริการทางการแพทย์ และจุดสัมผัส</p>
+            </div>
+            <button class="btn btn-primary admin-only" onclick="app.openAreaModal(null)">เพิ่มพื้นที่ใหม่</button>
+          </div>
+
+          <div class="areas-grid" id="areaCardsGrid"></div>
+        </div>
+
+        <!-- Manage Users Subtab (ADMIN ONLY) -->
+        <div id="subtab-manageUsers" class="subtab-pane">
+          <div class="block-header">
+            <div>
+              <h3 class="block-title">การจัดการบัญชีผู้ใช้งาน (User Management)</h3>
+              <p class="block-subtitle">จัดการสิทธิ์เจ้าหน้าที่ผู้ดูแลระบบและผู้ปฏิบัติงาน</p>
+            </div>
+            <button class="btn btn-primary" onclick="app.openUserModal(null)">เพิ่มผู้ใช้งานใหม่</button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ชื่อผู้ใช้ (Username)</th>
+                  <th>ชื่อ-นามสกุลที่แสดง</th>
+                  <th>สิทธิ์การใช้งาน (Role)</th>
+                  <th>สถานะบัญชี</th>
+                  <th>วันที่สร้าง</th>
+                  <th class="text-right">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="userTableBody">
+                <!-- Injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Backup & Restore Subtab (ADMIN ONLY) -->
+        <div id="subtab-systemConfig" class="subtab-pane">
+          <div class="card-box">
+            <h3 class="card-head-title">การจัดการฐานข้อมูลและการสำรองข้อมูล (Data Management)</h3>
+            <p class="text-muted mt-2">
+              ระบบจัดเก็บข้อมูลในพื้นที่จัดเก็บของเบราว์เซอร์ (LocalStorage Prototype) ท่านสามารถส่งออกไฟล์สำรอง (JSON) เพื่อเก็บรักษาเป็นหลักฐาน หรือนำเข้าข้อมูลเดิมเมื่อเปลี่ยนเครื่องใช้งาน
+            </p>
+            <div class="button-row mt-4">
+              <button class="btn btn-secondary" onclick="app.exportFullBackup()">สำรองข้อมูลทั้งหมด (Export JSON)</button>
+              <label class="btn btn-secondary file-upload-label">
+                นำเข้าข้อมูลจากไฟล์ (Import JSON)
+                <input type="file" id="restoreFileInput" accept=".json" onchange="app.importBackup(event)" style="display:none;">
+              </label>
+              <button class="btn btn-danger-outline" onclick="app.resetToDefault()">รีเซ็ตข้อมูลสู่ค่าเริ่มต้นของศูนย์ฯ</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- Modal 1: Quick Complete / Record Task -->
+    <div id="completeModal" class="modal-overlay hidden">
+      <div class="modal-container">
+        <div class="modal-head">
+          <h3 id="completeModalTitle">บันทึกการทำงานเสร็จสิ้น</h3>
+          <button class="btn-modal-close" onclick="app.closeModal('completeModal')" aria-label="ปิด">×</button>
+        </div>
+        <form id="completeTaskForm" onsubmit="app.handleCompleteSubmit(event)">
+          <input type="hidden" id="completeTaskId">
+          <div class="form-item">
+            <label class="form-label">ชื่องานและพื้นที่:</label>
+            <div class="task-summary-preview" id="completeTaskDetails">-</div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-item">
+              <label class="form-label" for="completeDate">วันที่ทำจริง: <span class="required">*</span></label>
+              <input type="date" id="completeDate" class="form-input" required>
+            </div>
+            <div class="form-item">
+              <label class="form-label" for="completeTime">เวลา: <span class="required">*</span></label>
+              <input type="time" id="completeTime" class="form-input" required>
+            </div>
+          </div>
+          <div class="form-item">
+            <label class="form-label" for="completeDoer">ชื่อผู้ปฏิบัติงาน: <span class="required">*</span></label>
+            <input type="text" id="completeDoer" class="form-input" placeholder="ระบุชื่อ-นามสกุล หรือเจ้าหน้าที่เวร" required>
+          </div>
+          <div class="form-item">
+            <label class="form-label" for="completeNotes">หมายเหตุ / รายละเอียดการตรวจ:</label>
+            <textarea id="completeNotes" class="form-textarea" rows="2" placeholder="เช่น ทำความสะอาดเรียบร้อย, เปลี่ยนถุงขยะใหม่ทุกใบ"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="app.closeModal('completeModal')">ยกเลิก</button>
+            <button type="submit" class="btn btn-primary btn-lg">บันทึกเสร็จสิ้น</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 2: Report Problem -->
+    <div id="problemModal" class="modal-overlay hidden">
+      <div class="modal-container">
+        <div class="modal-head">
+          <h3>บันทึกปัญหาและอุปสรรคในการปฏิบัติงาน</h3>
+          <button class="btn-modal-close" onclick="app.closeModal('problemModal')" aria-label="ปิด">×</button>
+        </div>
+        <form id="problemTaskForm" onsubmit="app.handleProblemSubmit(event)">
+          <input type="hidden" id="problemTaskId">
+          <div class="form-item">
+            <label class="form-label">ชื่องานและพื้นที่:</label>
+            <div class="task-summary-preview" id="problemTaskDetails">-</div>
+          </div>
+          <div class="form-item">
+            <label class="form-label" for="problemNotes">รายละเอียดปัญหาที่พบ: <span class="required">*</span></label>
+            <textarea id="problemNotes" class="form-textarea" rows="3" placeholder="ระบุสาเหตุ เช่น ห้องตรวจมีเคสผ่าตัดฉุกเฉิน, อุปกรณ์ชำรุด" required></textarea>
+          </div>
+          <div class="form-item">
+            <label class="form-label" for="problemReporter">ชื่อผู้แจ้งปัญหา: <span class="required">*</span></label>
+            <input type="text" id="problemReporter" class="form-input" placeholder="ระบุชื่อผู้รายงาน" required>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="app.closeModal('problemModal')">ยกเลิก</button>
+            <button type="submit" class="btn btn-danger">บันทึกสถานะมีปัญหา</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 3: Add/Edit Task Template -->
+    <div id="taskModal" class="modal-overlay hidden">
+      <div class="modal-container">
+        <div class="modal-head">
+          <h3 id="taskModalTitle">เพิ่มงานใหม่</h3>
+          <button class="btn-modal-close" onclick="app.closeModal('taskModal')" aria-label="ปิด">×</button>
+        </div>
+        <form id="taskForm" onsubmit="app.handleTaskSubmit(event)">
+          <input type="hidden" id="taskFormId">
+          <div class="form-item">
+            <label class="form-label" for="taskTitle">ชื่องาน: <span class="required">*</span></label>
+            <input type="text" id="taskTitle" class="form-input" placeholder="เช่น กวาดหยากไย่, ล้างถังขยะ" required>
+          </div>
+          <div class="form-item">
+            <label class="form-label" for="taskAreaId">พื้นที่ปฏิบัติงาน: <span class="required">*</span></label>
+            <select id="taskAreaId" class="form-select" required></select>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-item">
+              <label class="form-label" for="taskFrequency">รอบความถี่: <span class="required">*</span></label>
+              <select id="taskFrequency" class="form-select" onchange="app.handleFreqSelectChange(this)" required>
+                <option value="daily">งานประจำวัน</option>
+                <option value="weekly">งานประจำสัปดาห์ (7 วัน)</option>
+                <option value="biweekly" selected>ทุก 2 สัปดาห์ (14 วัน นับจากวันทำจริง)</option>
+                <option value="monthly">งานประจำเดือน (30 วัน)</option>
+                <option value="custom">กำหนดเอง (ระบุจำนวนวัน)</option>
+              </select>
+            </div>
+            <div class="form-item" id="customDaysGroup" style="display:none;">
+              <label class="form-label" for="taskCustomDays">จำนวนวันต่อรอบ: <span class="required">*</span></label>
+              <input type="number" id="taskCustomDays" class="form-input" min="1" max="365" value="14">
+            </div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-item">
+              <label class="form-label" for="taskStartDate">วันเริ่ม/วันครบกำหนดแรก: <span class="required">*</span></label>
+              <input type="date" id="taskStartDate" class="form-input" required>
+            </div>
+            <div class="form-item">
+              <label class="form-label" for="taskCategory">หมวดหมู่งาน/อุปกรณ์:</label>
+              <input type="text" id="taskCategory" class="form-input" placeholder="เช่น หยากไย่, ถังขยะ, พรม">
+            </div>
+          </div>
+          <div class="form-item">
+            <label class="form-label" for="taskDescription">คำอธิบายและแนวปฏิบัติ:</label>
+            <textarea id="taskDescription" class="form-textarea" rows="2" placeholder="ระบุข้อกำหนดในการปฏิบัติงาน"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="app.closeModal('taskModal')">ยกเลิก</button>
+            <button type="submit" class="btn btn-primary">บันทึกข้อมูลงาน</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 4: Add/Edit Area -->
+    <div id="areaModal" class="modal-overlay hidden">
+      <div class="modal-container">
+        <div class="modal-head">
+          <h3 id="areaModalTitle">เพิ่มพื้นที่ใหม่</h3>
+          <button class="btn-modal-close" onclick="app.closeModal('areaModal')" aria-label="ปิด">×</button>
+        </div>
+        <form id="areaForm" onsubmit="app.handleAreaSubmit(event)">
+          <input type="hidden" id="areaFormId">
+          <div class="form-item">
+            <label class="form-label" for="areaName">ชื่อพื้นที่หรือห้อง: <span class="required">*</span></label>
+            <input type="text" id="areaName" class="form-input" placeholder="เช่น ห้องตรวจ 8, ห้องพักแพทย์" required>
+          </div>
+          <div class="form-item">
+            <label class="form-label" for="areaCategory">ประเภทพื้นที่: <span class="required">*</span></label>
+            <select id="areaCategory" class="form-select" required>
+              <option value="ห้องตรวจ">ห้องตรวจ</option>
+              <option value="ห้องอื่น">ห้องอื่น</option>
+              <option value="จุดอื่น">จุดอื่น / ทางเดิน / ประตู</option>
+              <option value="ภายนอก">ภายนอกอาคาร</option>
+            </select>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="app.closeModal('areaModal')">ยกเลิก</button>
+            <button type="submit" class="btn btn-primary">บันทึกพื้นที่</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 5: Edit Bin Count -->
+    <div id="binModal" class="modal-overlay hidden">
+      <div class="modal-container">
+        <div class="modal-head">
+          <h3 id="binModalTitle">บันทึกจำนวนถังขยะประจำพื้นที่</h3>
+          <button class="btn-modal-close" onclick="app.closeModal('binModal')" aria-label="ปิด">×</button>
+        </div>
+        <form id="binForm" onsubmit="app.handleBinSubmit(event)">
+          <div class="form-item">
+            <label class="form-label" for="binAreaSelect">เลือกพื้นที่: <span class="required">*</span></label>
+            <select id="binAreaSelect" class="form-select" required></select>
+          </div>
+          <div class="bin-inputs-grid">
+            <div class="bin-input-cell cell-black">
+              <span class="bin-type-title">ถังดำ (ทั่วไป)</span>
+              <input type="number" id="binBlack" min="0" value="0" class="form-input-number" required>
+            </div>
+            <div class="bin-input-cell cell-red">
+              <span class="bin-type-title">ถังแดง (ติดเชื้อ)</span>
+              <input type="number" id="binRed" min="0" value="0" class="form-input-number" required>
+            </div>
+            <div class="bin-input-cell cell-green">
+              <span class="bin-type-title">ถังเขียว (เปียก)</span>
+              <input type="number" id="binGreen" min="0" value="0" class="form-input-number" required>
+            </div>
+            <div class="bin-input-cell cell-yellow">
+              <span class="bin-type-title">ถังเหลือง (รีไซเคิล)</span>
+              <input type="number" id="binYellow" min="0" value="0" class="form-input-number" required>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="app.closeModal('binModal')">ยกเลิก</button>
+            <button type="submit" class="btn btn-primary">บันทึกจำนวนถังขยะ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 6: User Management (Add / Edit User) - ADMIN ONLY -->
+    <div id="userModal" class="modal-overlay hidden">
+      <div class="modal-container">
+        <div class="modal-head">
+          <h3 id="userModalTitle">เพิ่มผู้ใช้งานใหม่</h3>
+          <button class="btn-modal-close" onclick="app.closeModal('userModal')" aria-label="ปิด">×</button>
+        </div>
+        <form id="userForm" onsubmit="app.handleUserSubmit(event)">
+          <input type="hidden" id="userFormId">
+          <div class="form-item">
+            <label class="form-label" for="userFormUsername">ชื่อผู้ใช้ (Username): <span class="required">*</span></label>
+            <input type="text" id="userFormUsername" class="form-input" placeholder="เช่น somchai, nurse01" autocomplete="off" required>
+          </div>
+          <div class="form-item">
+            <label class="form-label" for="userFormDisplayName">ชื่อ-นามสกุลที่แสดง: <span class="required">*</span></label>
+            <input type="text" id="userFormDisplayName" class="form-input" placeholder="เช่น สมชาย ใจดี (พนักงานทั่วไป)" required>
+          </div>
+          <div class="form-item" id="userFormPasswordGroup">
+            <label class="form-label" for="userFormPassword">รหัสผ่านเริ่มต้น: <span class="required">*</span></label>
+            <div class="password-input-group">
+              <input type="password" id="userFormPassword" class="form-input" placeholder="กำหนดรหัสผ่านอย่างน้อย 4 ตัวอักษร">
+              <button type="button" class="btn-toggle-pw" onclick="app.togglePasswordVisibility('userFormPassword', this)" aria-label="แสดงหรือซ่อนรหัสผ่าน">
+                <svg class="eye-icon eye-show" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="eye-icon eye-hide hidden" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-item">
+              <label class="form-label" for="userFormRole">สิทธิ์การใช้งาน (Role): <span class="required">*</span></label>
+              <select id="userFormRole" class="form-select" required>
+                <option value="staff">ผู้ปฏิบัติงาน (Staff)</option>
+                <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+              </select>
+            </div>
+            <div class="form-item">
+              <label class="form-label" for="userFormActive">สถานะบัญชี: <span class="required">*</span></label>
+              <select id="userFormActive" class="form-select" required>
+                <option value="true">เปิดใช้งาน (Active)</option>
+                <option value="false">ปิดการใช้งาน (Suspended)</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="app.closeModal('userModal')">ยกเลิก</button>
+            <button type="submit" class="btn btn-primary">บันทึกข้อมูลผู้ใช้</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 7: Change Password (ADMIN ONLY) -->
+    <div id="passwordModal" class="modal-overlay hidden">
+      <div class="modal-container">
+        <div class="modal-head">
+          <h3>เปลี่ยนรหัสผ่านผู้ใช้งาน</h3>
+          <button class="btn-modal-close" onclick="app.closeModal('passwordModal')" aria-label="ปิด">×</button>
+        </div>
+        <form id="passwordForm" onsubmit="app.handlePasswordSubmit(event)">
+          <input type="hidden" id="pwTargetUserId">
+          <div class="form-item">
+            <label class="form-label">ผู้ใช้งาน:</label>
+            <div class="task-summary-preview" id="pwTargetUserDetails">-</div>
+          </div>
+          <div class="form-item">
+            <label class="form-label" for="newPasswordInput">รหัสผ่านใหม่: <span class="required">*</span></label>
+            <div class="password-input-group">
+              <input type="password" id="newPasswordInput" class="form-input" placeholder="กรอกรหัสผ่านใหม่" required minlength="4">
+              <button type="button" class="btn-toggle-pw" onclick="app.togglePasswordVisibility('newPasswordInput', this)" aria-label="แสดงหรือซ่อนรหัสผ่าน">
+                <svg class="eye-icon eye-show" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="eye-icon eye-hide hidden" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="app.closeModal('passwordModal')">ยกเลิก</button>
+            <button type="submit" class="btn btn-primary">อัปเดตรหัสผ่าน</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 8: Logout Confirmation -->
+    <div id="logoutModal" class="modal-overlay hidden">
+      <div class="modal-container" style="max-width: 400px;">
+        <div class="modal-head">
+          <h3>ยืนยันการออกจากระบบ</h3>
+          <button class="btn-modal-close" onclick="app.closeModal('logoutModal')" aria-label="ปิด">×</button>
+        </div>
+        <div style="padding: 10px 0 16px;">
+          <p style="font-size: 0.95rem; color: var(--text-body);">ต้องการออกจากระบบหรือไม่?</p>
+          <p class="text-muted" style="font-size: 0.8rem; margin-top: 4px;">ท่านจะต้องลงชื่อเข้าใช้ด้วยชื่อผู้ใช้และรหัสผ่านใหม่อีกครั้ง</p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="app.closeModal('logoutModal')">ยกเลิก</button>
+          <button type="button" class="btn btn-danger" onclick="app.handleLogout()">ออกจากระบบ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toastMessage" class="toast hidden"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
