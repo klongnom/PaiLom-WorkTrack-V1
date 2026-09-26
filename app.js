@@ -38,16 +38,6 @@ const DEFAULT_USERS = [
     created_at: '2026-09-01T08:00:00.000Z',
     updated_at: '2026-09-01T08:00:00.000Z'
   }
-  {
-    id: 'user_kaung_lyal',
-    username: 'kaung',
-    display_name: 'กองแลง (ผู้ปฏิบัติงาน)',
-    role: 'kaung',
-    active: true,
-    password_hash: 'kaung1234',
-    created_at: '2026-09-01T08:00:00.000Z',
-    updated_at: '2026-09-01T08:00:00.000Z'
-  }
 ];
 
 // Thai Months
